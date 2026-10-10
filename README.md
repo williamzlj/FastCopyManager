@@ -13,7 +13,11 @@ If you, like me, need to run routine backups between multiple folders and find F
 - **Batch execution queue**: add multiple profiles to a queue, run them one by one in badge order, stop anytime
 - **Quick run**: a "Run Now" button on every card — no need to open the details page
 - **Drag & drop**: drag folders / files into the source list; drag cards to reorder profiles
-- **Flexible filtering**: exclude rules (`*` `?` wildcards), min/max file size, speed limit, verify after copy
+- **Flexible filtering**: include/exclude rules (`*` `?` wildcards), min/max file size, speed limit, verify after copy
+- **Date range filter**: optionally back up only files modified within a chosen date range (with handy "Last year" / "This year" shortcuts)
+- **Scheduled backup**: per-profile schedules (daily / weekly / monthly / at logon, with a delay) run via Windows Task Scheduler
+- **Standalone script export**: one click generates a self-contained PowerShell + BAT script from a profile — it runs on its own (no need for this app) and can be triggered by any scheduler
+- **Auto-skip when the target is offline**: if the destination drive is missing (e.g. a USB drive was unplugged), the run is skipped with a notification instead of reporting a misleading failure
 - **Backup history**: every run is logged with time / result / duration; double-click an entry to open its log
 - **User-facing logs**: each backup writes an independent `.log` file into the destination folder — logs follow your backups
 - **Portable design**: single green exe; all settings and data live next to the exe — copy them and you're migrated
@@ -62,6 +66,26 @@ To run several backups in a row:
 1. Select a profile and click "Add to Queue" — a blue badge shows its run order
 2. Repeat to add more profiles
 3. Click "Run Queue (N)"; profiles run in badge order, with a "Stop" button to abort anytime
+
+### Scheduled backup
+
+Each profile can have its own schedule:
+
+1. Open a profile and click "⏰ Schedule"
+2. Tick "Enable scheduled backup" and choose a frequency: **Daily / Weekly / Monthly / At logon** (for "at logon" you can set a delay, default 30 minutes, so backups don't slow down startup)
+3. Click Save — it takes effect immediately
+
+The schedule is registered with **Windows Task Scheduler** (task name `\FastCopyManager\<profile-id>`), so it runs even when this app is not open — and it needs no administrator rights. If the destination drive is unavailable at that moment (e.g. a USB drive is unplugged), the run is **skipped** with a tray notification, and the history shows "Skipped" rather than a failure.
+
+### Generate a standalone script
+
+To drive backups from another scheduler, or simply keep a copy of the exact command:
+
+1. Open a profile and click "📜 Generate Script"
+2. Choose where to save it; the app writes a self-contained `FastCopy备份-<name>-<date>.ps1` plus a matching `.bat`
+3. Double-click the `.bat` (or let any tool call it) — **no FastCopyManager required**, only FastCopy itself
+
+The script mirrors the app's behaviour: it checks the destination drive first (skipping if offline), calls FastCopy with the same options, and writes a `BackupLog` into the destination folder. It runs silently by default; delete `/no_ui` inside the script if you'd rather see FastCopy's progress window.
 
 ### Destination rule
 
@@ -135,7 +159,11 @@ FastCopyManager 是一个为方便用户使用 [FastCopy](https://fastcopy.jp/) 
 - **批量执行序列**：把多个方案加入执行序列，按角标顺序依次自动执行，支持中途停止
 - **快速执行**：每张卡片上的「立即备份」按钮，无需进详情页直接运行
 - **拖拽操作**：把文件夹 / 文件直接拖进源列表；拖动卡片调整方案顺序
-- **灵活的过滤**：排除规则（支持 `*` `?` 通配符）、体积上下限、速度限制、复制后校验
+- **灵活的过滤**：包含 / 排除规则（支持 `*` `?` 通配符）、体积上下限、速度限制、复制后校验
+- **日期范围过滤**：可只备份指定日期范围内修改过的文件（提供「最近一年」「今年」快捷按钮）
+- **定时备份**：每个方案可单独设置每天 / 每周 / 每月 / 登录后（可设延迟）自动备份，由 Windows 任务计划程序执行
+- **导出可执行脚本**：一键把方案生成自包含的 PowerShell + BAT 脚本，脱离本软件也能运行，可交给任何调度器触发
+- **目标盘不在时自动跳过**：目标磁盘不可用（如 U 盘被拔掉）时自动跳过并弹提示，而不是误报失败
 - **备份历史**：每次备份自动记录时间 / 结果 / 耗时，双击打开对应日志
 - **用户日志**：每次备份在输出目录生成独立的 `.log` 文件，日志跟着备份走
 - **便携设计**：绿色单文件，所有配置和数据都保存在 exe 同目录，拷走即迁移
@@ -185,13 +213,33 @@ FastCopyManager 是一个为方便用户使用 [FastCopy](https://fastcopy.jp/) 
 2. 重复上述操作把更多方案加入序列
 3. 点「执行备份序列（N）」，软件按角标顺序依次执行，底部出现「停止」按钮可随时中断
 
+#### 定时备份
+
+每个方案可以单独设置定时：
+
+1. 打开方案，点「⏰ 定时备份」
+2. 勾选「启用定时备份」，选择频率：**每天 / 每周 / 每月 / 登录后**（选「登录后」可设延迟，默认 30 分钟，避免拖慢开机）
+3. 点「保存」即生效
+
+定时任务注册在 **Windows 任务计划程序**中（任务名 `\FastCopyManager\<方案Id>`），软件不打开也会按时执行，且不需要管理员权限。若到点时目标磁盘不可用（例如 U 盘被拔掉），本次会**自动跳过**并弹托盘提示，历史记录显示「已跳过」而不是失败。
+
+#### 导出可执行脚本
+
+想把备份交给别的调度器，或只是想留一份准确的命令：
+
+1. 打开方案，点「📜 生成可执行脚本」
+2. 选择保存位置，软件会生成自包含的 `FastCopy备份-方案名-日期.ps1` 以及配套的 `.bat`
+3. 双击 `.bat`（或让任何工具调用它）即可执行 —— **无需 FastCopyManager**，只要有 FastCopy 就行
+
+脚本行为与软件一致：先检查目标盘（不可用则跳过）、用相同参数调用 FastCopy、在目标目录生成 `BackupLog`。脚本默认静默运行，想看到 FastCopy 进度窗口就把脚本里的 `/no_ui` 删掉。
+
 #### 目标目录规则
 
 源文件夹会**整个复制**到目标目录下，例如源为 `D:\photos`、目标为 `E:\backup`，备份后得到 `E:\backup\photos\…`。
 
 #### 备份日志
 
-- 每次备份完成后，在**目标目录**生成一份独立日志，文件名为 `文件备份日志-方案名-年月日时分秒.log`
+- 每次备份完成后，在**目标目录**生成一份独立日志，文件名为 `BackupLog-方案名-年月日时分秒.log`
 - 日志只供用户查看，软件不回读；方案详情页的「执行历史」双击即可打开对应日志
 - 软件自身的方案配置和历史记录保存在 exe 同目录的 `profiles.json` 和 `history.json`
 
